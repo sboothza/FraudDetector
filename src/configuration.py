@@ -1,0 +1,3 @@
+CONNECTION_STRING = "sqlite:///fraud.db"
+TIME_WINDOW = "1h"
+BATCH_COUNT = 100
