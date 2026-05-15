@@ -51,7 +51,8 @@ def seed():
         currency_repo.add("yen", "Yen", "Y", 0.1, False)
 
     with CustomerRepository(session) as customer_repo:
-        customer_repo.add
+        customer_repo.add("Stephen", "Booth", "stephen@email", "740315", "zar")
+        customer_repo.add("Tamrin", "Booth", "tamrin@email", "800315", "usd")
 
 if __name__ == "__main__":
     seed()

@@ -20,13 +20,14 @@ class TransactionProcessor:
         session = CreateSession()
         try:
             self.transaction_window = transaction_window
-            rule_repo = RuleRepository(session)
-            rule_entities = rule_repo.get_all()
+            if len(TransactionProcessor.rules) == 0:
+                rule_repo = RuleRepository(session)
+                rule_entities = rule_repo.get_all()
 
-            for rule in rule_entities:
-                rule_type = resolve_type(rule.type_name)
-                rule_obj = rule_type(rule.id, rule.parameters)
-                self.rules.append(rule_obj)
+                for rule in rule_entities:
+                    rule_type = resolve_type(rule.type_name)
+                    rule_obj = rule_type(rule.id, rule.parameters)
+                    TransactionProcessor.rules.append(rule_obj)
         finally:
             session.close()
 
@@ -48,7 +49,7 @@ class TransactionProcessor:
         with TransactionRepository(session) as trans_repo:
             all_transactions = trans_repo.get_for_customer_timerange(customer.id, min_transaction_date)
             with TransactionRuleHistoryRepository(session) as trans_rule_history_repo:
-                for rule in self.rules:
+                for rule in TransactionProcessor.rules:
                     result, text = rule.process_rule(session, customer, all_transactions.copy(), transaction)
                     trans_rule_history_repo.add(transaction, run_date, rule, result, text)
                     if not result:

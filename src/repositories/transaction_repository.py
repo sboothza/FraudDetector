@@ -1,14 +1,13 @@
 import datetime
 
-from sqlalchemy.orm import Session
-
+from dependencies import CreateSession
 from models.transaction import Transaction
+from repositories.currency_repository import CurrencyRepository
 from repositories.repository import Repository
 
 
 class TransactionRepository(Repository):
     model = Transaction
-
 
     def get_for_customer_timerange(
             self,
@@ -28,3 +27,24 @@ class TransactionRepository(Repository):
         for transaction in transactions:
             transaction.is_processed = True
 
+    def add(self, transaction_id: str, reference: str, amount: float, currency_code: str, debit_credit: str,
+            customer_id: int, transaction_type_id: int, transaction_status_id: int) -> Transaction:
+        session = CreateSession()
+        currency = CurrencyRepository(session).get_by_id(currency_code)
+        base_amount = currency.amount_to_base(amount)
+
+        transaction = Transaction(
+            transaction_id=transaction_id,
+            reference=reference,
+            amount=amount,
+            base_amount=base_amount,
+            currency_code=currency_code,
+            debit_credit=debit_credit,
+            customer_id=customer_id,
+            transaction_type_id=transaction_type_id,
+            transaction_status_id=transaction_status_id)
+
+        session.add(transaction)
+        session.commit()
+        session.expunge(transaction)
+        return transaction

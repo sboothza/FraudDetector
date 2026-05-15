@@ -8,6 +8,9 @@ class TransactionTypeRepository(Repository):
     model = TransactionType
 
 
-    def add(self, name:str, description:str):
-        status = TransactionType(name=name, description=description)
-        self.session.add(status)
+    def add(self, name:str, description:str)->TransactionType:
+        tt = TransactionType(name=name, description=description)
+        self.session.add(tt)
+        self.session.commit()
+        self.session.expunge(tt)
+        return tt

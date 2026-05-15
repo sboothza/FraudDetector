@@ -26,5 +26,8 @@ class UserRepository(Repository):
         user = User(username=username, password=password_hasher.hash(password))
         roles_repo = RoleRepository(self.session)
         role_list = roles_repo.map_names_to_roles(roles)
-        user.roles.append(role_list)
+        user.roles.extend(role_list)
         self.session.add(user)
+        self.session.commit()
+        self.session.expunge(user)
+        return user

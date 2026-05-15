@@ -1,5 +1,4 @@
 from sqlalchemy import update
-from sqlalchemy.orm import Session
 
 from models.currency import Currency
 from repositories.repository import Repository
@@ -8,7 +7,6 @@ from repositories.repository import Repository
 class CurrencyRepository(Repository):
     model = Currency
     base_currency: Currency | None = None
-
 
     def get_by_id(self, id) -> Currency:
         return self.session.query(Currency).filter_by(code=id).first()
@@ -19,11 +17,15 @@ class CurrencyRepository(Repository):
 
         return CurrencyRepository.base_currency
 
-    def add(self, code:str, name:str, symbol:str, exchange_rate:float, is_default:bool):
+    def add(self, code: str, name: str, symbol: str, exchange_rate: float, is_default: bool) -> Currency:
         if is_default:
             self.session.execute(
                 update(Currency)
                 .values(is_default=False)
             )
 
-        self.session.add(Currency(code=code, name=name, symbol=symbol,exchange_rate=exchange_rate, is_default=is_default))
+        currency = Currency(code=code, name=name, symbol=symbol, exchange_rate=exchange_rate, is_default=is_default)
+        self.session.add(currency)
+        self.session.commit()
+        self.session.expunge(currency)
+        return currency
