@@ -6,8 +6,6 @@ from rules.rule import Rule
 
 
 class BalanceRule(Rule):
-    def __init__(self, parameters: dict):
-        super().__init__(parameters)
 
     def process_rule(self, session: Session,customer: Customer, customer_transactions:list[Transaction], root_transaction: Transaction) -> tuple[bool, str]:
         result_value: bool = True

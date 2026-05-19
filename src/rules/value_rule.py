@@ -6,8 +6,8 @@ from rules.rule import Rule
 
 
 class ValueRule(Rule):
-    def __init__(self, parameters: dict):
-        super().__init__(parameters)
+    def __init__(self, id: int, parameters: dict):
+        super().__init__(id, parameters)
         self.high_value = parameters['high_value']
         self.low_value = parameters['low_value']
 

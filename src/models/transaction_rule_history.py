@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 class TransactionRuleHistory(Base):
     __tablename__ = "transaction_rule_history"
 
-    id: Mapped[int] = mapped_column(primary_key=True, auto_increment=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     transaction_id: Mapped[int] = mapped_column(ForeignKey("transaction.id"), nullable=False)
     transaction: Mapped["Transaction"] = relationship(back_populates="transaction_rule_history")
     run_date: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now(), nullable=False)
     rule_id: Mapped[int] = mapped_column(ForeignKey("rule.id"), nullable=False)
-    rule: Mapped["Rule"] = relationship(back_populates="transaction_rule_history")
+    rule: Mapped["Rule"] = relationship()
     result: Mapped[bool] = mapped_column(default=False, nullable=False)
     details: Mapped[str] = mapped_column(default="", nullable=False)

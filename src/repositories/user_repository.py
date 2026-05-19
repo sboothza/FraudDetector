@@ -23,11 +23,12 @@ class UserRepository(Repository):
         return user
 
     def add(self, username: str, password: str, roles: list[str]) -> User | None:
-        user = User(username=username, password=password_hasher.hash(password))
+        user = User(username=username, password_hash=password_hasher.hash(password))
         roles_repo = RoleRepository(self.session)
         role_list = roles_repo.map_names_to_roles(roles)
         user.roles.extend(role_list)
         self.session.add(user)
         self.session.commit()
+        self.session.refresh(user)
         self.session.expunge(user)
         return user

@@ -8,11 +8,12 @@ from utils import parse_timedelta
 
 
 class DuplicateTransactionsRule(Rule):
-    def __init__(self, parameters: dict):
-        super().__init__(parameters)
+    def __init__(self, id: int, parameters: dict):
+        super().__init__(id, parameters)
         self.transaction_window = parse_timedelta(parameters["transaction_window"])
 
-    def process_rule(self, session: Session,customer: Customer, customer_transactions:list[Transaction], root_transaction: Transaction) -> tuple[bool, str]:
+    def process_rule(self, session: Session, customer: Customer, customer_transactions: list[Transaction],
+                     root_transaction: Transaction) -> tuple[bool, str]:
         result_value: bool = True
         result_text: str = ""
         min_transaction_date = root_transaction.create_date - self.transaction_window

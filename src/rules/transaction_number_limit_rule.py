@@ -10,8 +10,8 @@ from utils import parse_timedelta
 
 
 class TransactionNumberLimitRule(Rule):
-    def __init__(self, parameters: dict):
-        super().__init__(parameters)
+    def __init__(self, id: int, parameters: dict):
+        super().__init__(id, parameters)
         self.transaction_count = parameters["transaction_count"]
         self.transaction_delay = parse_timedelta(parameters["transaction_delay"])
         self.transaction_window = parse_timedelta(parameters["transaction_window"])

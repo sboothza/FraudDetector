@@ -7,6 +7,7 @@ from models.base import Base
 
 if TYPE_CHECKING:
     from models.currency import Currency
+    from models.transaction import Transaction
 
 
 class Customer(Base):
@@ -19,6 +20,7 @@ class Customer(Base):
     id_number: Mapped[str] = mapped_column(default="", nullable=False, unique=True, index=True)
     balance: Mapped[float] = mapped_column(default=0, nullable=False)
     currency_code: Mapped[str] = mapped_column(ForeignKey("currency.code"), default="", nullable=False)
-    currency: Mapped[Currency] = relationship(back_populates="customer")
+    currency: Mapped["Currency"] = relationship()
     base_balance: Mapped[float] = mapped_column(default=0, nullable=False)
+    transactions: Mapped[list["Transaction"]] = relationship(back_populates="customer")
 
