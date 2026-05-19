@@ -1,7 +1,10 @@
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from configuration import (
@@ -9,12 +12,15 @@ from configuration import (
     JWT_ALGORITHM,
     JWT_SECRET_KEY,
 )
+from exceptions import ForbiddenError, UnauthorizedError
 
-SECRET_KEY = JWT_SECRET_KEY
-ALGORITHM = JWT_ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+bearer_scheme = HTTPBearer(auto_error=False)
 
-bearer_scheme = HTTPBearer()
+
+@dataclass(frozen=True)
+class CurrentUser:
+    subject: str
+    roles: list[str]
 
 
 def create_access_token(
@@ -23,31 +29,51 @@ def create_access_token(
     expires_delta: timedelta | None = None,
 ) -> str:
     expire = datetime.now(UTC) + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta or timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     payload = {"sub": subject, "roles": roles or [], "exp": expire}
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
-async def get_current_subject(
-        credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-) -> str:
-    token = credentials.credentials
+def _decode_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except jwt.InvalidTokenError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
+        raise UnauthorizedError("Invalid or expired token") from exc
 
+
+def _parse_roles(raw_roles: object) -> list[str]:
+    if not isinstance(raw_roles, list):
+        return []
+    return [role for role in raw_roles if isinstance(role, str)]
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> CurrentUser:
+    if credentials is None:
+        raise UnauthorizedError("Not authenticated")
+
+    payload = _decode_token(credentials.credentials)
     subject = payload.get("sub")
     if not isinstance(subject, str) or not subject:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise UnauthorizedError("Invalid token payload")
 
-    return subject
+    return CurrentUser(subject=subject, roles=_parse_roles(payload.get("roles")))
+
+
+async def get_current_subject(user: CurrentUser = Depends(get_current_user)) -> str:
+    return user.subject
+
+
+def require_roles(*roles: str) -> Callable:
+    async def checker(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+        if not any(role in user.roles for role in roles):
+            raise ForbiddenError("Insufficient permissions")
+        return user
+
+    return checker
+
+
+RequireAdmin = Annotated[CurrentUser, Depends(require_roles("admin"))]
+RequireUser = Annotated[CurrentUser, Depends(require_roles("user"))]

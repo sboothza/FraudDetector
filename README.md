@@ -117,6 +117,8 @@ DATABASE_URL=postgresql+psycopg://fraud:fraud@localhost:5432/fraud
 | `JWT_SECRET_KEY` | No | `dev-only-change-before-production` | Secret used to sign access tokens. **Set a strong value in production.** |
 | `JWT_ALGORITHM` | No | `HS256` | JWT signing algorithm |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | No | `60` | Access token lifetime in minutes |
+| `LOGIN_RATE_LIMIT_MAX` | No | `5` | Max login attempts per client IP per window |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | No | `60` | Sliding window for login rate limiting (seconds) |
 
 ### Fraud processing
 
@@ -184,16 +186,18 @@ Seeded users are defined in `seed.py`.
 ## API routes
 
 - `GET /` — health check
-- `POST /auth/login` — obtain a JWT
-- `GET /customers/{customer_id}/transactions` — list a customer's transactions (authenticated)
-- `POST /process/transaction` — process one transaction
-- `POST /process/process_all` — start background batch processing
+- `POST /auth/login` — obtain a JWT (rate-limited per client IP)
+- `GET /customers/{customer_id}/transactions` — list a customer's transactions (`user` role only)
+- `POST /process/transaction` — process one transaction (`admin` role only)
+- `POST /process/process_all` — start background batch processing (`admin` role only)
 
 Interactive API docs are available at `/docs` while the server is running.
 
 ## Project layout
 
 - `src/main.py` — FastAPI application entry point
+- `src/auth.py` — JWT auth, `CurrentUser`, `RequireAdmin` / `RequireUser` dependencies
+- `src/converters.py` — model-to-schema mapping helpers
 - `src/configuration.py` — environment variable loading
 - `src/models/` — SQLAlchemy models
 - `src/repositories/` — database access layer

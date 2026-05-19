@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from auth import RequireAdmin
 from configuration import BATCH_COUNT
 from dependencies import get_db, time_window
 from exceptions import BadRequestError, NotFoundError
@@ -14,13 +15,17 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+def _processor() -> TransactionProcessor:
+    return TransactionProcessor(time_window)
+
+
 @router.post("/transaction", response_model=ApiResponse)
 async def process_transaction(
     body: ProcessTransactionRequest,
+    _: RequireAdmin,
     session: Session = Depends(get_db),
 ) -> ApiResponse:
-    trans_repo = TransactionRepository(session)
-    transaction = trans_repo.get_by_id(body.transaction_id)
+    transaction = TransactionRepository(session).get_by_id(body.transaction_id)
     if transaction is None:
         raise NotFoundError(
             f"Transaction {body.transaction_id} not found",
@@ -33,8 +38,7 @@ async def process_transaction(
             data={"transaction_id": body.transaction_id},
         )
 
-    processor = TransactionProcessor(time_window)
-    result, text = processor.process_transaction(transaction, session)
+    result, text = _processor().process_transaction(transaction, session)
     logger.info(
         "Processed transaction id=%s transaction_id=%s success=%s",
         transaction.id,
@@ -45,10 +49,9 @@ async def process_transaction(
 
 
 @router.post("/process_all", response_model=ApiResponse)
-async def process_all() -> ApiResponse:
+async def process_all(_: RequireAdmin) -> ApiResponse:
     logger.info("Starting batch processing for up to %s transactions", BATCH_COUNT)
-    processor = TransactionProcessor(time_window)
-    processor.process_batch(BATCH_COUNT)
+    _processor().process_batch(BATCH_COUNT)
     return ApiResponse(
         code=202,
         success=True,

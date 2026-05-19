@@ -26,3 +26,15 @@ class ConflictError(AppError):
 class UnauthorizedError(AppError):
     def __init__(self, message: str = "Unauthorized", *, data: dict | None = None):
         super().__init__(message, code=401, data=data)
+
+
+class ForbiddenError(AppError):
+    def __init__(self, message: str = "Forbidden", *, data: dict | None = None):
+        super().__init__(message, code=403, data=data)
+
+
+class TooManyRequestsError(AppError):
+    def __init__(
+        self, message: str = "Too many requests", *, data: dict | None = None
+    ):
+        super().__init__(message, code=429, data=data)

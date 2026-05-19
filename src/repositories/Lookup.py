@@ -23,5 +23,4 @@ class Lookup:
             self._data[key] = d
 
     def get_by_name(self, name: str) -> Base:
-        result = next(d for k, d in self._data.items() if k == name)
-        return result
+        return self._data[name]
